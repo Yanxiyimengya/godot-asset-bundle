@@ -148,7 +148,7 @@ func _export_bundle(bundle_path: String, bundle: AssetBundle, subpackage_directo
 	var packed_paths : Dictionary[String, bool] = {};
 	var resource_paths : PackedStringArray = bundle_resource_paths.get(bundle_path, PackedStringArray());
 	for resource_path in resource_paths:
-		_pack_resource_path(packer, resource_path, temp_directory, packed_paths);
+		_pack_resource_path(packer, resource_path, temp_directory, packed_paths, bundle_path, bundle);
 	
 	error = packer.flush();
 	if (error != OK):
@@ -160,7 +160,9 @@ func _pack_resource_path(
 		packer: PCKPacker, \
 		resource_path: String, \
 		temp_directory: String, \
-		packed_paths: Dictionary[String, bool]) -> void:
+		packed_paths: Dictionary[String, bool], \
+		bundle_path: String, \
+		bundle: AssetBundle) -> void:
 	
 	var resource : Resource = ResourceLoader.load(resource_path);
 	if (resource == null):
@@ -169,7 +171,14 @@ func _pack_resource_path(
 	
 	for processor in resource_processors:
 		if (processor.can_process(resource_path, resource)):
-			processor.pack_resource(packer, resource_path, resource, temp_directory, packed_paths);
+			processor.pack_resource(
+					packer, \
+					resource_path, \
+					resource, \
+					temp_directory, \
+					packed_paths, \
+					bundle_path, \
+					bundle.pack_external_dependencies);
 			return;
 
 func _remove_directory(path: String) -> void:

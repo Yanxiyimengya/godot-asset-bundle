@@ -1,6 +1,6 @@
 extends RefCounted;
 
-## Pack remapped resources/scenes
+## 打包 remap 资源/场景
 static func pack_remapped_resource(
 		packer: PCKPacker, \
 		resource_path: String, \
@@ -37,25 +37,28 @@ static func pack_remapped_resource(
 	
 	_pack_resource_remap(packer, resource_path, package_resource_path, temp_directory, packed_paths);
 
-## Pack resource dependencies
+## 打包资源依赖
 static func pack_resource_dependencies(
 		packer: PCKPacker, \
 		resource_path: String, \
 		temp_directory: String, \
-		packed_paths: Dictionary[String, bool]) -> void:
+		packed_paths: Dictionary[String, bool], \
+		bundle_path: String = "", \
+		pack_external_dependencies: bool = true) -> void:
 	
 	if (resource_path.is_empty()): return;
 	
 	for dependency in ResourceLoader.get_dependencies(resource_path):
 		var dependency_path : String = _get_dependency_path(dependency);
 		if (dependency_path.is_empty()): continue;
+		if (!pack_external_dependencies && !_is_dependency_in_bundle(dependency, dependency_path, bundle_path)): continue;
 		
 		if (has_import_file(dependency_path)):
 			pack_import_dependencies(packer, dependency_path, temp_directory, packed_paths);
 		elif (dependency_path.begins_with("res://.godot/imported/")):
 			pack_project_file(packer, dependency_path, packed_paths);
 
-## Read import dependencies from the .import file and pack them
+## 读取 .import 文件中的导入依赖，并打包依赖项
 static func pack_import_dependencies(
 		packer: PCKPacker, \
 		resource_path: String, \
@@ -104,7 +107,7 @@ static func pack_import_dependencies(
 	for imported_path in imported_paths:
 		pack_project_file(packer, imported_path, packed_paths);
 
-## Pack files from the project directory
+## 打包项目目录中的文件
 static func pack_project_file(
 		packer: PCKPacker, \
 		path: String, \
@@ -126,7 +129,7 @@ static func pack_project_file(
 	
 	packed_paths[path] = true;
 
-## Check whether this is a scene file
+## 判断是否为场景文件
 static func is_scene_resource(resource_path: String, resource: Resource) -> bool:
 	if (resource is PackedScene): return true;
 	if (resource_path.is_empty()): return false;
@@ -134,12 +137,12 @@ static func is_scene_resource(resource_path: String, resource: Resource) -> bool
 	var extension : String = resource_path.get_extension().to_lower();
 	return extension == "tscn" || extension == "scn";
 
-## Check whether the current file has a .import file
+## 检查当前文件是否存在 .import 导入文件
 static func has_import_file(path: String) -> bool:
 	if (path.is_empty()): return false;
 	return FileAccess.file_exists(path + ".import");
 
-## Pack the resource remap file
+## 打包资源的 remap 文件
 static func _pack_resource_remap(
 		packer: PCKPacker, \
 		resource_path: String, \
@@ -193,6 +196,18 @@ static func _get_dependency_path(dependency: String) -> String:
 			return part;
 	return "";
 
+static func _is_dependency_in_bundle(dependency: String, dependency_path: String, bundle_path: String) -> bool:
+	if (_is_path_in_bundle(dependency_path, bundle_path)):
+		return true;
+
+	for part in dependency.split("::"):
+		if (!part.begins_with("res://")): continue;
+		if (part.begins_with("res://.godot/imported/")): continue;
+		if (_is_path_in_bundle(part, bundle_path)):
+			return true;
+
+	return false;
+
 static func _get_exported_file_path(resource_path: String, extension: String) -> String:
 	var resource_name : String = resource_path.get_file().get_basename();
 	var resource_hash : String = resource_path.md5_text();
@@ -201,6 +216,13 @@ static func _get_exported_file_path(resource_path: String, extension: String) ->
 		resource_name = "resource";
 	
 	return "res://.godot/exported/subpackages/export-%s-%s.%s" % [resource_hash, resource_name, extension];
+
+static func _is_path_in_bundle(path: String, bundle_path: String) -> bool:
+	if (bundle_path.is_empty()): return true;
+	var bundle_directory : String = bundle_path.path_join("");
+	if (!bundle_directory.ends_with("/")):
+		bundle_directory += "/";
+	return path.begins_with(bundle_directory);
 
 static func _get_temp_resource_file_name(resource_path: String) -> String:
 	var file_name : String = resource_path.trim_prefix("res://");
