@@ -2,6 +2,8 @@
 
 GodotAssetBundle 是一个 Godot 编辑器导出插件，用于在项目导出时把指定目录下的资源拆分成独立的 `.pck` 资源包。它适合把 DLC、章节内容、皮肤、关卡包、可选美术资源等内容从主包中分离出来，减少主包体积，并让资源按需分发或加载。
 
+<img src="https://github.com/Yanxiyimengya/godot-asset-bundle/blob/main/icon.svg" width="500" height="300" />
+
 ## 特色
 
 - 目录级资源分包：在某个目录中放置 `AssetBundle` 资源，即可把该目录作为一个资源包导出。
