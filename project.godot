@@ -11,7 +11,6 @@ config_version=5
 [application]
 
 config/name="godot-asset-bundle"
-run/main_scene="uid://btsqxutbuu4xf"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="uid://c1qsqc4jjk4o3"
 
